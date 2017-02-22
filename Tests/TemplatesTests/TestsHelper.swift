@@ -150,6 +150,8 @@ extension XCTestCase {
             contextNames: [String],
             outputPrefix: String,
             directory: Fixtures.Directory,
+            file: StaticString = #file,
+            line: UInt = #line,
             contextVariations: VariationGenerator? = nil) {
     let template = StencilSwiftTemplate(templateString: Fixtures.template(for: "\(templateName).stencil"),
                                         environment: stencilSwiftEnvironment())
@@ -159,12 +161,15 @@ extension XCTestCase {
       print("Testing context '\(contextName)'...")
       let context = Fixtures.context(for: "\(contextName).plist", sub: directory)
 
-      for (context, suffix) in contextVariations(contextName, context) {
+      let variations = contextVariations(contextName, context)
+      for (index, (context: context, suffix: suffix)) in variations.enumerated() {
+        if variations.count > 1 { print(" - Variation #\(index)...") }
+
         guard let result = try? template.render(context) else {
           fatalError("Unable to render template")
         }
         let expected = Fixtures.output(for: "\(outputPrefix)-context-\(contextName)\(suffix).swift", sub: directory)
-        XCTDiffStrings(result, expected)
+        XCTDiffStrings(result, expected, file: file, line: line)
       }
     }
   }
